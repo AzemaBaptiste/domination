@@ -1,0 +1,4 @@
+venv
+kafka_2.12*
+.idea
+shadow/__pycache__/
