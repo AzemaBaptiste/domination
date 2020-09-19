@@ -1,4 +1,8 @@
+# Python specific
 venv
-kafka_2.12*
+.coverage
+domination/__pycache__/
+.pytest_cache
+
+# IDE specific
 .idea
-shadow/__pycache__/
