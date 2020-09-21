@@ -3,51 +3,27 @@ Domination
 
 Real-time application made to monitor and dominate Humans.
 
+From the rating of every human (from 1 to 100) sent to the kafka topic `dominate`,
+ we detect, in real time, which type they are:
+ - `Sha` if its rating is a multiple of 3
+ - `Dow` if its rating is a multiple of 5
+ - `ShaDow` if its rating is a multiple of 3 and 5
+ - `Incompatible` if none of the above.
+ 
+Using a new kafka topic `shadow`, we make the result available to a clickhouse 
+table named `shadow`.
 
-## Requirements
 
-- Python >= 3.6
-- docker-compose
 
-## Usage
-
-    pip install domination
+## System Design
     
-    # Start domination
-    docker-compose up -d
-    pip install domination
-    domination worker -l info
-    
-    # Stop domination
-    Ctrl + C
-    docker-compose down
-    
-    # In case of Kafka broker errors occur:
-    docker-compose rm && docker-compose up -d  # recreate containers
-    
-## Development
-
-    # Install
-    virtualenv -p python3 venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    make install
-    
-    # Build
-    make test # coverage tests
-    make linter # runs pylint
-    make build
-
-
-# Design
-    
-    +----------------+                +-------------+              +-------------+
-    |  HumanRatings  |                |  dominate   |              |  domination |
-    +----------------+                +-------------+              +-------------+
-    |                | +------------> |             | +----------> |             |
-    | Faust producer |                | Kafka topic |              | python faust|
-    |                |                |             |              | agent       |
-    +----------------+                +-------------+              +-------------+
+    +----------------+               +-------------+            +------------------+
+    |  domination    |               |  dominate   |            | domination       |
+    +----------------+               +-------------+            +------------------+
+    | python         | +-----------> |             | +--------> | python           |
+    | Faust producer |               | Kafka topic |            | Faust agent      |
+    | HumanRatings   |               |             |            | HumanCategorized |
+    +----------------+               +-------------+            +------------------+
                                                                           +
                                                                           |
           +---------------------------------------------------------------+
@@ -73,7 +49,6 @@ Real-time application made to monitor and dominate Humans.
     |                   |
     +-------------------+
 
-     
 
 Structure of Kafka messages:
 - topic `dominate`:
@@ -84,23 +59,65 @@ Structure of Kafka messages:
     `{"type": <integer>, "unique_id": "<string>", "emit_timestamp": <datetime>}`
 
 
-Create clickhouse table
+## Requirements
+
+- Python >= 3.6
+- docker-compose
+
+## Usage
+
+    pip install domination
+    
+    # Start domination
+    docker-compose up -d
+    domination worker -l info
+    
+    # Stop domination
+    Ctrl + C
+    docker-compose down
+    
+    # In case of Kafka broker errors occur:
+    docker-compose rm && docker-compose up -d  # recreate containers
+
+You can also run The Algorithm as a standalone. It will print the type 
+of every human rated from 1 to 1337.
+
+    python the_algorithm.py 
+    
+## Development
+
+    # Install
+    virtualenv -p python3.8 venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    make install
+    
+    # Build
+    make test # coverage tests
+    make linter # runs pylint
+    make build
+
+#### Create clickhouse tables
+
+Open CLI of the clickhouse client
 
     docker exec -it clickhouse bin/bash -c "clickhouse-client --multiline"
 
+Create shadow_stream, shadow and shadow_consumer tales
+
     CREATE TABLE IF NOT EXISTS shadow_stream
-        (
-            `type` String,
-            `unique_id` String,
-            `emit_timestamp` DateTime
-        ) ENGINE = Kafka()
-          SETTINGS
-            kafka_broker_list = 'localhost:9092',
-            kafka_topic_list = 'shadow',
-            kafka_group_name = 'shadow-group',
-            kafka_format = 'JSONEachRow',
-            kafka_skip_broken_messages = 1,
-            kafka_num_consumers = 1;
+    (
+        `type` String,
+        `unique_id` String,
+        `emit_timestamp` DateTime
+    ) ENGINE = Kafka()
+      SETTINGS
+        kafka_broker_list = 'localhost:9092',
+        kafka_topic_list = 'shadow',
+        kafka_group_name = 'shadow-group',
+        kafka_format = 'JSONEachRow',
+        kafka_skip_broken_messages = 1,
+        kafka_num_consumers = 1;
     
 
     CREATE TABLE shadow as shadow_stream
