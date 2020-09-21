@@ -1,6 +1,7 @@
 from unittest.mock import patch, call, Mock
-
+from datetime import datetime
 import pytest
+from freezegun import freeze_time
 
 from domination import process
 
@@ -27,6 +28,7 @@ async def test_detect_human_type_call_process():
 
 
 @pytest.mark.asyncio
+@freeze_time("2020-01-01")
 async def test_detect_human_type_send_topic():
     """Assert agent send human_categorized to 'shadow' topic"""
 
@@ -36,7 +38,8 @@ async def test_detect_human_type_send_topic():
             human = process.HumanRating(rating=18, unique_id="unique_123")
             await agent.put(human)
 
-            human_categorized = process.HumanCategorized(unique_id=human.unique_id, type='Sha')
+            human_categorized = process.HumanCategorized(unique_id=human.unique_id, type='Sha',
+                                                         emit_timestamp=datetime(2020, 1, 1))
             assert mock_shadow_topic.send.mock_calls == [(call(value=human_categorized))]
 
 
