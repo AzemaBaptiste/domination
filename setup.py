@@ -7,7 +7,7 @@ setup(
     name='domination',
     author='Baptiste Azéma',
     author_email='baptiste@azema.tech',
-    version='1.0',
+    version='1.1',
     packages=['domination'],
     include_package_data=True,
     python_requires='~=3.6',
