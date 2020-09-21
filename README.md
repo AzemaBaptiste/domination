@@ -54,28 +54,30 @@ Structure of Kafka messages:
 ## Usage
 
 #### Requirements
+
 - Python >= 3.6
 - docker-compose
 
-
-
-    pip install domination
+#### Start domination
     
-    # Start domination
+    git clone https://github.com/AzemaBaptiste/domination.git && cd domination
+    virtualenv -p python3.8 venv && source venv/bin/activate
+    pip install domination
     docker-compose up -d
     ./create_clickhouse_tables.sh
-    domination worker -l info
     
-    # explore data
+    domination worker -l info
+ 
+#### Explore data in a new terminal
     docker exec -it clickhouse bin/bash -c "clickhouse-client --multiline"
        > SELECT COUNT(type) AS COUNT, type FROM shadow 
          GROUP BY type ORDER BY (COUNT) DESC LIMIT 10;
     
-    # Stop domination
-    Ctrl + C
+#### Stop domination
+    Ctrl + C (stop faust app)
     docker-compose down
     
-
+#### Run The Algorithm
 You can also run The Algorithm as a standalone. It will print the type 
 of every human rated from 1 to 1337.
 
@@ -93,7 +95,6 @@ of every human rated from 1 to 1337.
     make test # coverage tests
     make linter # runs pylint
     make build
-    make install
 
 ## Explore data
 
@@ -102,9 +103,8 @@ Open CLI of the clickhouse client
     docker exec -it clickhouse bin/bash -c "clickhouse-client --multiline"
 
 
-Description of clickhouse tables:
-- shadow_stream: consumer of the kafka topic
-
+### Description of clickhouse tables
+##### `shadow_stream`: consumer of the kafka topic
 
     CREATE TABLE IF NOT EXISTS shadow_stream
     (
@@ -119,17 +119,14 @@ Description of clickhouse tables:
         kafka_format = 'JSONEachRow',
         kafka_skip_broken_messages = 1;
     
-- shadow: final table
-
+##### `shadow`: final table
 
     CREATE TABLE shadow as shadow_stream
     ENGINE = MergeTree()
     PARTITION BY toYYYYMM(emit_timestamp)
     ORDER BY type;
 
-
-- shadow_consumer: materialized view feeding the final table with the consumer table
-
+##### `shadow_consumer`: materialized view feeding the final table with the consumer table
 
     CREATE MATERIALIZED VIEW shadow_consumer 
     TO shadow
