@@ -17,7 +17,7 @@ test:
 
 linter:
 	pip install -r requirements.txt
-	pylint domination --output-format=text --ignore-patterns=test
+	pylint domination --output-format=text --ignore-patterns=test --fail-under=8
 
 install: build clean
 	pip install -r requirements.txt
