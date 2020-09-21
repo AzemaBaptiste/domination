@@ -1,7 +1,7 @@
 from pkg_resources import parse_requirements
 from setuptools import setup
 
-REQUIREMENTS = [str(r.req) for r in parse_requirements('requirements.txt')]
+REQUIREMENTS = [i.strip() for i in open("requirements.txt").readlines()]
 
 setup(
     name='domination',
