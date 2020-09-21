@@ -1,4 +1,7 @@
+from pkg_resources import parse_requirements
 from setuptools import setup
+
+REQUIREMENTS = [str(r.req) for r in parse_requirements('requirements.txt')]
 
 setup(
     name='domination',
@@ -8,6 +11,7 @@ setup(
     packages=['domination'],
     include_package_data=True,
     python_requires='~=3.6',
+    install_requires=REQUIREMENTS,
     description='Real-time application in order to dominate Humans.',
     license='LICENSE',
     entry_points={
