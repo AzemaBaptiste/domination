@@ -53,10 +53,10 @@ Structure of Kafka messages:
 
 ## Usage
 
-##### Requirements
-
+#### Requirements
 - Python >= 3.6
 - docker-compose
+
 
 
     pip install domination
