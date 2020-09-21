@@ -39,7 +39,7 @@ async def test_detect_human_type_send_topic():
             await agent.put(human)
 
             human_categorized = process.HumanCategorized(unique_id=human.unique_id, type='Sha',
-                                                         emit_timestamp=datetime(2020, 1, 1))
+                                                         emit_timestamp='2020-01-01T00:00:00Z')
             assert mock_shadow_topic.send.mock_calls == [(call(value=human_categorized))]
 
 

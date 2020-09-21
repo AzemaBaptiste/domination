@@ -112,29 +112,31 @@ Create shadow_stream, shadow and shadow_consumer tales
         `emit_timestamp` DateTime
     ) ENGINE = Kafka()
       SETTINGS
-        kafka_broker_list = 'localhost:9092',
+        kafka_broker_list = 'kafka:29092',
         kafka_topic_list = 'shadow',
         kafka_group_name = 'shadow-group',
         kafka_format = 'JSONEachRow',
-        kafka_skip_broken_messages = 1,
-        kafka_num_consumers = 1;
+        kafka_skip_broken_messages = 1;
     
 
     CREATE TABLE shadow as shadow_stream
     ENGINE = MergeTree()
     PARTITION BY toYYYYMM(emit_timestamp)
-    ORDER BY emit_timestamp;
+    ORDER BY type;
 
 
     CREATE MATERIALIZED VIEW shadow_consumer 
     TO shadow
     AS SELECT * FROM shadow;
     
+You can now explore your data
+
+    SELECT COUNT(*) AS COUNT, type FROM shadow
+     GROUP BY type ORDER BY (COUNT) DESC LIMIT 10;
 
 ## References
 - [blog.streamthoughts.fr](https://blog.streamthoughts.fr/2020/06/creer-une-plateforme-analytique-temps-reel-avec-kafka-ksqldb-et-clickhouse/)
-
+- [medium.com](https://medium.com/big-data-engineering/hello-kafka-world-the-complete-guide-to-kafka-with-docker-and-python-f788e2588cfc)
 
 ## TODO
- - deploy package to pypi
- - setup github actions
+ - deploy package to pypi using github actions

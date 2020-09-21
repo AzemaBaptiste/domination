@@ -50,7 +50,7 @@ async def detect_human_type(human_ratings):
             await shadow_topic.send(value=HumanCategorized(
                 unique_id=human_rating.unique_id,
                 type=evaluation,
-                emit_timestamp=datetime.now()
+                emit_timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             ))
         except ValueError as err:
             logging.error('Error: %s', str(err))
