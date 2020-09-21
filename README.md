@@ -14,7 +14,6 @@ Using a new kafka topic `shadow`, we make the result available to a clickhouse
 table named `shadow`.
 
 
-
 ## System Design
     
     +----------------+               +-------------+            +------------------+
@@ -25,28 +24,22 @@ table named `shadow`.
     | HumanRatings   |               |             |            | HumanCategorized |
     +----------------+               +-------------+            +------------------+
                                                                           +
-                                                                          |
           +---------------------------------------------------------------+
-          |
           v
     +----------------+           +-------------------+           +-------------------+
     |  shadow        |           | shadow_stream     |           |  shadow_consumer  |
     +----------------+           +-------------------+           +-------------------+
     |                | +------>  | clickhouse table  | +------>  | clickhouse table  |
     |  Kafka topic   |           | encapsulate topic |           | materialized view |
-    |                |           |                   |           |                   |
     +----------------+           +-------------------+           +-------------------+
                                                                           +
-                                                                          |
           +---------------------------------------------------------------+
-          |
           v
     +-------------------+
     |  shadow           |
     +-------------------+
     | clickhouse table  |
     | store rows        |
-    |                   |
     +-------------------+
 
 
@@ -58,26 +51,30 @@ Structure of Kafka messages:
 - topic `shadow`:
     `{"type": <integer>, "unique_id": "<string>", "emit_timestamp": <datetime>}`
 
+## Usage
 
-## Requirements
+##### Requirements
 
 - Python >= 3.6
 - docker-compose
 
-## Usage
 
     pip install domination
     
     # Start domination
     docker-compose up -d
+    ./create_clickhouse_tables.sh
     domination worker -l info
+    
+    # explore data
+    docker exec -it clickhouse bin/bash -c "clickhouse-client --multiline"
+       > SELECT COUNT(type) AS COUNT, type FROM shadow 
+         GROUP BY type ORDER BY (COUNT) DESC LIMIT 10;
     
     # Stop domination
     Ctrl + C
     docker-compose down
     
-    # In case of Kafka broker errors occur:
-    docker-compose rm && docker-compose up -d  # recreate containers
 
 You can also run The Algorithm as a standalone. It will print the type 
 of every human rated from 1 to 1337.
@@ -96,14 +93,18 @@ of every human rated from 1 to 1337.
     make test # coverage tests
     make linter # runs pylint
     make build
+    make install
 
-#### Create clickhouse tables
+## Explore data
 
 Open CLI of the clickhouse client
 
     docker exec -it clickhouse bin/bash -c "clickhouse-client --multiline"
 
-Create shadow_stream, shadow and shadow_consumer tales
+
+Description of clickhouse tables:
+- shadow_stream: consumer of the kafka topic
+
 
     CREATE TABLE IF NOT EXISTS shadow_stream
     (
@@ -118,6 +119,8 @@ Create shadow_stream, shadow and shadow_consumer tales
         kafka_format = 'JSONEachRow',
         kafka_skip_broken_messages = 1;
     
+- shadow: final table
+
 
     CREATE TABLE shadow as shadow_stream
     ENGINE = MergeTree()
@@ -125,15 +128,13 @@ Create shadow_stream, shadow and shadow_consumer tales
     ORDER BY type;
 
 
+- shadow_consumer: materialized view feeding the final table with the consumer table
+
+
     CREATE MATERIALIZED VIEW shadow_consumer 
     TO shadow
-    AS SELECT * FROM shadow;
+    AS SELECT * FROM shadow_stream;
     
-You can now explore your data
-
-    SELECT COUNT(*) AS COUNT, type FROM shadow
-     GROUP BY type ORDER BY (COUNT) DESC LIMIT 10;
-
 ## References
 - [blog.streamthoughts.fr](https://blog.streamthoughts.fr/2020/06/creer-une-plateforme-analytique-temps-reel-avec-kafka-ksqldb-et-clickhouse/)
 - [medium.com](https://medium.com/big-data-engineering/hello-kafka-world-the-complete-guide-to-kafka-with-docker-and-python-f788e2588cfc)
